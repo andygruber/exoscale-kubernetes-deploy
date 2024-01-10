@@ -6,6 +6,12 @@ This GitHub repository contains the necessary files for deploying a WordPress si
 
 It is based of an [example](https://kubernetes.io/docs/tutorials/stateful-application/mysql-wordpress-persistent-volume/) from the Kubernetes Documentation.
 
+Other sources are:
+- https://chat.openai.com/
+- https://hub.docker.com/_/wordpress
+- https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+- https://stackoverflow.com/questions/66482385/kubernetes-mysqld-cant-create-write-to-file-var-lib-mysql-is-writable-errc
+
 ## Files in the Repository
 - `mysql-pv.yaml`: Defines the Persistent Volume for MySQL data storage.
 - `mysql-deployment.yaml`: Kubernetes deployment configuration for MySQL.
