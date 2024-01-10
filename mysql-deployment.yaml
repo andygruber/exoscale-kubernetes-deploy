@@ -45,9 +45,34 @@ spec:
         app: wordpress
         tier: mysql
     spec:
+      initContainers:
+      # need to init permissions to PV so mysql can write to it, to prevent error
+      # mysqld: Can't create/write to file '/var/lib/mysql/is_writable' (OS errno 13 - Permission denied)
+      - name: chmod-er
+        image: busybox:latest
+        command:
+        - /bin/chown
+        - -R
+        - "999:999"
+        - /var/lib/mysql
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
+
       containers:
       - image: mysql:8.0
         name: mysql
+        securityContext:
+          runAsUser: 999
+          runAsGroup: 999
+          allowPrivilegeEscalation: false
+        resources:
+          requests:
+            memory: "500Mi"
+            cpu: "100m"
+          limits:
+            memory: "1000Mi"
+            cpu: "500m"
         env:
         - name: MYSQL_ROOT_PASSWORD
           valueFrom:
