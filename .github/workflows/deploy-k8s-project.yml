@@ -1,4 +1,4 @@
-name: Generate and upload WinCC OA image  
+name: Deploy Kubernetes project
 
 on:
 #  push:
@@ -52,6 +52,25 @@ jobs:
       - name: Deploy
         run: |
           kubectl --kubeconfig kubeconfig apply -k ./
+
+      - name: Check for LoadBalancer IP and Write to Step Summary
+        run: |
+          IP=""
+          for i in {1..10}; do
+            IP=$(kubectl --kubeconfig kubeconfig get service -o=jsonpath='{.items[?(@.spec.type=="LoadBalancer")].status.loadBalancer.ingress[0].ip}')
+            if [[ -n "$IP" ]]; then
+              echo "LoadBalancer IP is $IP"
+              echo "http://$IP" >> $GITHUB_STEP_SUMMARY
+              break
+            else
+              echo "Waiting for LoadBalancer IP to be available..."
+              sleep 10
+            fi
+          done
+          if [[ -z "$IP" ]]; then
+            echo "Failed to get LoadBalancer IP after multiple retries"
+            exit 1
+          fi
 
       - name: Cleanup Kubeconfig
         if: always() # This ensures that the cleanup step runs even if earlier steps fail
