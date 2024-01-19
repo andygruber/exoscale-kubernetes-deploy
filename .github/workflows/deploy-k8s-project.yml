@@ -47,13 +47,13 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Decode kubeconfig
-        run: echo ${{ secrets.KUBECONFIG_BASE64 }} | base64 -d > $HOME/.kube/config
+        run: echo ${{ secrets.KUBECONFIG_BASE64 }} | base64 -d > kubeconfig
 
       - name: Deploy
         run: |
-          kubectl apply -k ./
+          kubectl --kubeconfig kubeconfig apply -k ./
 
       - name: Cleanup Kubeconfig
         if: always() # This ensures that the cleanup step runs even if earlier steps fail
         run: |
-          rm -f $HOME/.kube/config
+          rm -f kubeconfig
