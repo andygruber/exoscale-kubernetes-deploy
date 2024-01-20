@@ -19,31 +19,45 @@ Other sources are:
 - `kustomization.yaml`: Kustomize configuration to manage Kubernetes objects.
 
 ## Setup Instructions
-1. **Create Persistent Volume**: 
-   - Run `kubectl apply -f mysql-pv.yaml` to create the Persistent Volume for MySQL.
+1. **Prerequisites**: 
+   - Make sure to have the the current kubeconfig, which stores your cluster information, available as a file named `kubeconfig`.
+   - Run following command to have the longhorn storageClass available in your cluster
+      ```bash
+      kubectl --kubeconfig kubeconfig apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.5.3/deploy/longhorn.yaml
+      ```
+   - Convert the kubeconfig to base64 and store it in the `staging` or `production` stage in the secret variable `KUBECONFIG_BASE64`.
+     Make sure to not copy the empty line from the resulting base64 file.
+     - Powershell
+         ```powershell
+         [Convert]::ToBase64String([IO.File]::ReadAllBytes("kubeconfig")) | Set-Content 'kubeconfig_base64'
+         ```
+     - Bash
+         ```bash
+         base64 -w 0 kubeconfig > kubeconfig_base64
+         ```
+     Please note, this needs to be refreshed after 2 hours, so this is just for testing purposes now.
 
 2. **Deploy MySQL and WordPress**:
-   - Execute `kubectl apply -k ./` to deploy both MySQL and WordPress services in Kubernetes.
+   - Execute `kubectl --kubeconfig kubeconfig apply -k ./` to deploy both MySQL and WordPress services in Kubernetes.
 
 3. **Access WordPress**:
-   - For Docker Desktop users, access WordPress at `http://localhost:80`.
-   - Retrieve the external service IP using `kubectl get services wordpress`.
+   - The github action shows the URL in the summary
+   - Manually retrieve the external service IP using `kubectl --kubeconfig kubeconfig get services wordpress`.
 
 ## Teardown Instructions
 1. **Stop Services**:
-   - Use `kubectl delete -k ./` to stop and remove the WordPress and MySQL deployments from Kubernetes.
+   - Use `kubectl --kubeconfig kubeconfig delete -k ./` to stop and remove the WordPress and MySQL deployments from Kubernetes.
 
-2. **Manage Persistent Volume**:
-   - Check PV status with `kubectl describe pv`.
-   - To make the PV available again, use `kubectl patch pv mysql-pv-volume -p '{"spec":{"claimRef": null}}'`.
-   - Alternatively, delete and recreate the PV if data on the host is still available:
-     - `kubectl delete -f mysql-pv.yaml`
-     - `kubectl apply -f mysql-pv.yaml`
+2. **Delete storageClass**:
+   - Run following command to remove the longhorn storageClass from your cluster
+      ```bash
+      kubectl --kubeconfig kubeconfig delete -f https://raw.githubusercontent.com/longhorn/longhorn/v1.5.3/deploy/longhorn.yaml
+      ```
+
+3. Do not forget to destroy the k8s cluster to avoid unnecessary costs.
 
 ## Important Notes and Considerations
-- **Test Environment Suitability**: The current configuration with a static PV using a host-path is suited for test environments like Docker Desktop or Minikube.
-- **Adapting for Production**: For production environments, consider dynamic volume provisioning and storage classes for better scalability and management.
-- Regularly back up the data stored in the Persistent Volume to prevent data loss.
+Add some disclaimers here later
 
 ## Contribution and Code Review Process
 - Fork the repository to contribute.
