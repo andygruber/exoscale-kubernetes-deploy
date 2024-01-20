@@ -22,7 +22,7 @@ jobs:
         run: |
           ENV_NAME=staging
           if [[ "${{ github.event_name }}" == "release" ]]; then
-            ENV_NAME=production
+            ENV_NAME=staging
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
             ENV_NAME=staging
           else
