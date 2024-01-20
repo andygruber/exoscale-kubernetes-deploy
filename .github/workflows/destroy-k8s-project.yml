@@ -37,11 +37,11 @@ jobs:
         with:
           account: ${{ vars.EXOSCALE_USER }}
           zone: ${{ vars.EXOSCALE_ZONE }}
-          key: ${{ secrets.EXOSCALE_KEY }}
-          secret: ${{ secrets.EXOSCALE_SECRET }}
+          key: ${{ secrets.EXOSCALE_API_KEY }}
+          secret: ${{ secrets.EXOSCALE_API_SECRET }}
 
       - name: Get kubeconfig
-        run: exo compute sks kubeconfig ${{ secrets.EXOSCALE_SKS_NAME }} ${{ vars.EXOSCALE_USER }} --zone ${{ vars.EXOSCALE_ZONE }} > kubeconfig
+        run: exo compute sks kubeconfig ${{ vars.EXOSCALE_SKS_NAME }} ${{ vars.EXOSCALE_USER }} --zone ${{ vars.EXOSCALE_ZONE }} > kubeconfig
 
       - name: Destroy
         run: |
