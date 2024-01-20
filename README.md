@@ -17,10 +17,32 @@ Other sources are:
 - `mysql-deployment.yaml`: Kubernetes deployment configuration for MySQL.
 - `wordpress-deployment.yaml`: Kubernetes deployment configuration for WordPress.
 - `kustomization.yaml`: Kustomize configuration to manage Kubernetes objects.
+- `.github/workflows`: Github Actions workflows
 
 ## Setup Instructions
-0. **Setup the cluster**
-   - If you use the cluster from exoscale, you can use this [Infrastructure-as-Code Lab](https://fhb-codelabs.netlify.app/codelabs/iac-opentofu-intro/) to setup the cluster and to get the `kubeconfig`.
+
+### Create environment
+By default, for all workflow runs, an environment with the name `staging` is used.
+
+Create all required environments and adapt the logic in the workflow (`get_environment -> env_check`) if you want to use multiple environments.
+
+### Required Secrets
+- `EXOSCALE_API_KEY`: Exoscale API key
+- `EXOSCALE_API_SECRET`: Exoscale API secret
+
+### Required environment variables
+- `EXOSCALE_SKS_NAME`: Clustername in exoscale
+- `EXOSCALE_ZONE`: Zone where the cluster is deployed, e.g. `at-vie-2`
+- `EXOSCALE_USER`: Username in exoscale, is required but does not seem to be used, anything like `admin` does work
+
+### Triggering the Workflow
+The workflow is triggered on:
+- Pull requests to `main` or `develop` branches
+- Published releases
+- manually
+
+### Setup the cluster
+   - Setup the cluster in Exoscale, you can use this [Infrastructure-as-Code Lab](https://fhb-codelabs.netlify.app/codelabs/iac-opentofu-intro/) to setup the cluster and to get the `kubeconfig`.
      - In that Lab some firewall rules are missing, like described [here](https://community.exoscale.com/documentation/sks/quick-start/#creating-a-cluster-from-the-cli).
        Adapt the example so the loadbalancer works, by adding the following lines to the main.tf file:
        ```
@@ -34,36 +56,24 @@ Other sources are:
          end_port          = 32767
        }
        ```
-   - You can use another cluster, if you provide the corresponding `kubeconfig`.
-
-1. **Prerequisites**: 
-   - Make sure to have the the current kubeconfig, which stores your cluster information, available as a file named `kubeconfig`.
    - Run following command to have the longhorn storageClass available in your cluster
       ```bash
       kubectl --kubeconfig kubeconfig apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.5.3/deploy/longhorn.yaml
       ```
-   - Convert the kubeconfig to base64 and store it in the `staging` or `production` stage in the secret variable `KUBECONFIG_BASE64`.
-     Make sure to not copy the empty line from the resulting base64 file.
-     - Powershell
-         ```powershell
-         [Convert]::ToBase64String([IO.File]::ReadAllBytes("kubeconfig")) | Set-Content 'kubeconfig_base64'
-         ```
-     - Bash
-         ```bash
-         base64 -w 0 kubeconfig > kubeconfig_base64
-         ```
-     Please note, this needs to be refreshed after 2 hours, so this is just for testing purposes now.
 
-2. **Deploy MySQL and WordPress**:
-   - Execute `kubectl --kubeconfig kubeconfig apply -k ./` to deploy both MySQL and WordPress services in Kubernetes.
+## Deploy the Kubernetes project
 
-3. **Access WordPress**:
-   - The github action shows the URL in the summary
-   - Manually retrieve the external service IP using `kubectl --kubeconfig kubeconfig get services wordpress`.
+- Deployment can be done with the Github Action `Deploy Kubernetes project`.
+- Local deployment can be done by executing: `kubectl --kubeconfig kubeconfig apply -k ./` 
+
+### Access the Loadbalancer
+- The github action shows the URL in the summary
+- Manually retrieve the external service IP using `kubectl --kubeconfig kubeconfig get services wordpress`.
 
 ## Teardown Instructions
 1. **Stop Services**:
-   - Use `kubectl --kubeconfig kubeconfig delete -k ./` to stop and remove the WordPress and MySQL deployments from Kubernetes.
+   - Deletion can be done with the Github Action `Destroy Kubernetes project`.
+   - Locally use `kubectl --kubeconfig kubeconfig delete -k ./` to stop and remove the Kubernetes project.
 
 2. **Delete storageClass**:
    - Run following command to remove the longhorn storageClass from your cluster
