@@ -46,8 +46,16 @@ jobs:
       - name: Set up Git repository
         uses: actions/checkout@v3
 
-      - name: Decode kubeconfig
-        run: echo ${{ secrets.KUBECONFIG_BASE64 }} | base64 -d > kubeconfig
+      - name: Setup Exoscale CLI
+        uses: nhedger/setup-exoscale@v2
+        with:
+          account: ${{ vars.EXOSCALE_USER }}
+          zone: ${{ vars.EXOSCALE_ZONE }}
+          key: ${{ secrets.EXOSCALE_KEY }}
+          secret: ${{ secrets.EXOSCALE_SECRET }}
+
+      - name: Get kubeconfig
+        run: exo compute sks kubeconfig ${{ secrets.EXOSCALE_SKS_NAME }} ${{ vars.EXOSCALE_USER }} --zone ${{ vars.EXOSCALE_ZONE }} > kubeconfig
 
       - name: Deploy
         run: |
