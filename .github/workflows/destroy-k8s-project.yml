@@ -45,7 +45,7 @@ jobs:
 
       - name: Destroy
         run: |
-          kubectl --kubeconfig kubeconfig apply -k ./
+          kubectl --kubeconfig kubeconfig delete -k ./
 
       - name: Cleanup Kubeconfig
         if: always() # This ensures that the cleanup step runs even if earlier steps fail
