@@ -19,6 +19,23 @@ Other sources are:
 - `kustomization.yaml`: Kustomize configuration to manage Kubernetes objects.
 
 ## Setup Instructions
+0. **Setup the cluster**
+   - If you use the cluster from exoscale, you can use this [Infrastructure-as-Code Lab](https://fhb-codelabs.netlify.app/codelabs/iac-opentofu-intro/) to setup the cluster and to get the `kubeconfig`.
+     - In that Lab some firewall rules are missing, like described [here](https://community.exoscale.com/documentation/sks/quick-start/#creating-a-cluster-from-the-cli).
+       Adapt the example so the loadbalancer works, by adding the following lines to the main.tf file:
+       ```
+       resource "exoscale_security_group_rule" "nodeportsvc" {
+         security_group_id = exoscale_security_group.my_security_group.id
+         description       = "Nodeport Services"
+         type              = "INGRESS"
+         cidr              = "0.0.0.0/0"
+         protocol          = "TCP"
+         start_port        = 30000
+         end_port          = 32767
+       }
+       ```
+   - You can use another cluster, if you provide the corresponding `kubeconfig`.
+
 1. **Prerequisites**: 
    - Make sure to have the the current kubeconfig, which stores your cluster information, available as a file named `kubeconfig`.
    - Run following command to have the longhorn storageClass available in your cluster
