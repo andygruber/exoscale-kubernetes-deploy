@@ -1,0 +1,45 @@
+name: Destroy Kubernetes project
+
+on:
+# so we can also shutdown the k8s project, run this manually
+  workflow_dispatch:
+
+jobs:
+  get_environment:
+    runs-on: ubuntu-latest
+
+# Adapt once we need it. For now we will never shutdown production.
+    steps:
+      - name: Some check on branch
+        id: branch_check
+        run: |
+          ENV_NAME=staging
+
+          echo "Chosen environment: ${ENV_NAME}"
+
+          echo "env_name=${ENV_NAME}" >> $GITHUB_OUTPUT
+                  
+    outputs:
+      env_name: ${{ steps.branch_check.outputs.env_name }}
+
+  destroy-k8s-project:
+    needs: [get_environment]
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ needs.get_environment.outputs.env_name }}
+
+    steps:
+      - name: Set up Git repository
+        uses: actions/checkout@v3
+
+      - name: Decode kubeconfig
+        run: echo ${{ secrets.KUBECONFIG_BASE64 }} | base64 -d > kubeconfig
+
+      - name: Destroy
+        run: |
+          kubectl --kubeconfig kubeconfig apply -k ./
+
+      - name: Cleanup Kubeconfig
+        if: always() # This ensures that the cleanup step runs even if earlier steps fail
+        run: |
+          rm -f kubeconfig

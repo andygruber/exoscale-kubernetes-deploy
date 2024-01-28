@@ -34,10 +34,10 @@ spec:
       containers:
       - image: wordpress:6.2.1-apache
         name: wordpress
-        securityContext:
-          runAsUser: 33
-          runAsGroup: 33
-          allowPrivilegeEscalation: false
+        # securityContext:
+        #   runAsUser: 33
+        #   runAsGroup: 33
+        #   allowPrivilegeEscalation: false
         resources:
           requests:
             memory: "1000Mi"
