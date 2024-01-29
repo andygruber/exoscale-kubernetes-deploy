@@ -22,7 +22,7 @@ jobs:
         run: |
           ENV_NAME=staging
           if [[ "${{ github.event_name }}" == "release" ]]; then
-            ENV_NAME=production
+            ENV_NAME=staging
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
             ENV_NAME=staging
           else
@@ -46,8 +46,16 @@ jobs:
       - name: Set up Git repository
         uses: actions/checkout@v3
 
-      - name: Decode kubeconfig
-        run: echo ${{ secrets.KUBECONFIG_BASE64 }} | base64 -d > kubeconfig
+      - name: Setup Exoscale CLI
+        uses: nhedger/setup-exoscale@v2
+        with:
+          account: ${{ vars.EXOSCALE_USER }}
+          zone: ${{ vars.EXOSCALE_ZONE }}
+          key: ${{ secrets.EXOSCALE_API_KEY }}
+          secret: ${{ secrets.EXOSCALE_API_SECRET }}
+
+      - name: Get kubeconfig
+        run: exo compute sks kubeconfig ${{ vars.EXOSCALE_SKS_NAME }} ${{ vars.EXOSCALE_USER }} --zone ${{ vars.EXOSCALE_ZONE }} > kubeconfig
 
       - name: Deploy
         run: |
