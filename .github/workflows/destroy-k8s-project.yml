@@ -1,0 +1,53 @@
+name: Destroy Kubernetes project
+
+on:
+# so we can also shutdown the k8s project, run this manually
+  workflow_dispatch:
+
+jobs:
+  get_environment:
+    runs-on: ubuntu-latest
+
+# Adapt once we need it. For now we will never shutdown production.
+    steps:
+      - name: Some check on branch
+        id: branch_check
+        run: |
+          ENV_NAME=staging
+
+          echo "Chosen environment: ${ENV_NAME}"
+
+          echo "env_name=${ENV_NAME}" >> $GITHUB_OUTPUT
+                  
+    outputs:
+      env_name: ${{ steps.branch_check.outputs.env_name }}
+
+  destroy-k8s-project:
+    needs: [get_environment]
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ needs.get_environment.outputs.env_name }}
+
+    steps:
+      - name: Set up Git repository
+        uses: actions/checkout@v3
+
+      - name: Setup Exoscale CLI
+        uses: nhedger/setup-exoscale@v2
+        with:
+          account: ${{ vars.EXOSCALE_USER }}
+          zone: ${{ vars.EXOSCALE_ZONE }}
+          key: ${{ secrets.EXOSCALE_API_KEY }}
+          secret: ${{ secrets.EXOSCALE_API_SECRET }}
+
+      - name: Get kubeconfig
+        run: exo compute sks kubeconfig ${{ vars.EXOSCALE_SKS_NAME }} ${{ vars.EXOSCALE_USER }} --zone ${{ vars.EXOSCALE_ZONE }} > kubeconfig
+
+      - name: Destroy
+        run: |
+          kubectl --kubeconfig kubeconfig delete -k ./
+
+      - name: Cleanup Kubeconfig
+        if: always() # This ensures that the cleanup step runs even if earlier steps fail
+        run: |
+          rm -f kubeconfig

@@ -17,33 +17,74 @@ Other sources are:
 - `mysql-deployment.yaml`: Kubernetes deployment configuration for MySQL.
 - `wordpress-deployment.yaml`: Kubernetes deployment configuration for WordPress.
 - `kustomization.yaml`: Kustomize configuration to manage Kubernetes objects.
+- `.github/workflows`: Github Actions workflows
 
 ## Setup Instructions
-1. **Create Persistent Volume**: 
-   - Run `kubectl apply -f mysql-pv.yaml` to create the Persistent Volume for MySQL.
 
-2. **Deploy MySQL and WordPress**:
-   - Execute `kubectl apply -k ./` to deploy both MySQL and WordPress services in Kubernetes.
+### Create environment
+By default, for all workflow runs, an environment with the name `staging` is used.
 
-3. **Access WordPress**:
-   - For Docker Desktop users, access WordPress at `http://localhost:80`.
-   - Retrieve the external service IP using `kubectl get services wordpress`.
+Create all required environments and adapt the logic in the workflow (`get_environment -> env_check`) if you want to use multiple environments.
+
+### Required Secrets
+- `EXOSCALE_API_KEY`: Exoscale API key
+- `EXOSCALE_API_SECRET`: Exoscale API secret
+
+### Required environment variables
+- `EXOSCALE_SKS_NAME`: Clustername in exoscale
+- `EXOSCALE_ZONE`: Zone where the cluster is deployed, e.g. `at-vie-2`
+- `EXOSCALE_USER`: Username in exoscale, is required but does not seem to be used, anything like `admin` does work
+
+### Triggering the Workflow
+The workflow is triggered on:
+- Pull requests to `main` or `develop` branches
+- Published releases
+- manually
+
+### Setup the cluster
+   - Setup the cluster in Exoscale, you can use this [Infrastructure-as-Code Lab](https://fhb-codelabs.netlify.app/codelabs/iac-opentofu-intro/) to setup the cluster and to get the `kubeconfig`.
+     - In that Lab some firewall rules are missing, like described [here](https://community.exoscale.com/documentation/sks/quick-start/#creating-a-cluster-from-the-cli).
+       Adapt the example so the loadbalancer works, by adding the following lines to the main.tf file:
+       ```
+       resource "exoscale_security_group_rule" "nodeportsvc" {
+         security_group_id = exoscale_security_group.my_security_group.id
+         description       = "Nodeport Services"
+         type              = "INGRESS"
+         cidr              = "0.0.0.0/0"
+         protocol          = "TCP"
+         start_port        = 30000
+         end_port          = 32767
+       }
+       ```
+   - Run following command to have the longhorn storageClass available in your cluster
+      ```bash
+      kubectl --kubeconfig kubeconfig apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.5.3/deploy/longhorn.yaml
+      ```
+
+## Deploy the Kubernetes project
+
+- Deployment can be done with the Github Action `Deploy Kubernetes project`.
+- Local deployment can be done by executing: `kubectl --kubeconfig kubeconfig apply -k ./` 
+
+### Access the Loadbalancer
+- The github action shows the URL in the summary
+- Manually retrieve the external service IP using `kubectl --kubeconfig kubeconfig get services wordpress`.
 
 ## Teardown Instructions
 1. **Stop Services**:
-   - Use `kubectl delete -k ./` to stop and remove the WordPress and MySQL deployments from Kubernetes.
+   - Deletion can be done with the Github Action `Destroy Kubernetes project`.
+   - Locally use `kubectl --kubeconfig kubeconfig delete -k ./` to stop and remove the Kubernetes project.
 
-2. **Manage Persistent Volume**:
-   - Check PV status with `kubectl describe pv`.
-   - To make the PV available again, use `kubectl patch pv mysql-pv-volume -p '{"spec":{"claimRef": null}}'`.
-   - Alternatively, delete and recreate the PV if data on the host is still available:
-     - `kubectl delete -f mysql-pv.yaml`
-     - `kubectl apply -f mysql-pv.yaml`
+2. **Delete storageClass**:
+   - Run following command to remove the longhorn storageClass from your cluster
+      ```bash
+      kubectl --kubeconfig kubeconfig delete -f https://raw.githubusercontent.com/longhorn/longhorn/v1.5.3/deploy/longhorn.yaml
+      ```
+
+3. Do not forget to destroy the k8s cluster to avoid unnecessary costs.
 
 ## Important Notes and Considerations
-- **Test Environment Suitability**: The current configuration with a static PV using a host-path is suited for test environments like Docker Desktop or Minikube.
-- **Adapting for Production**: For production environments, consider dynamic volume provisioning and storage classes for better scalability and management.
-- Regularly back up the data stored in the Persistent Volume to prevent data loss.
+Add some disclaimers here later
 
 ## Contribution and Code Review Process
 - Fork the repository to contribute.
